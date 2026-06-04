@@ -86,7 +86,8 @@ async def wyslij_raport_stanu():
 
 def sprawdz_gwh():
     nowe_oferty = []
-    url_gwh = "https://www.gwh.de/mieten" 
+    # TUTAJ JEST ZMIANA: Wklejony Twój dokładny link z filtrami GWH
+    url_gwh = "https://www.gwh.de/mietangebote?tx_solr[filter][9]=pid:117&tx_solr[filter][10]=estate_type:APARTMENT&tx_solr[filter][11]=city:Frankfurt+am+Main&tx_solr[filter][12]=rooms:2-4&tx_solr[filter][13]=rent:800-1500" 
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
     try:
         response = requests.get(url_gwh, headers=headers, timeout=15)
@@ -128,7 +129,8 @@ def sprawdz_gwh():
 
 def sprawdz_nhw():
     nowe_oferty = []
-    url_nhw = "https://www.nhw.de/mietwohnungen/frankfurt"
+    # TUTAJ JEST ZMIANA: Zaktualizowany link do ofert NHW
+    url_nhw = "https://www.nhw.de/wohnungsangebote"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
     try:
         response = requests.get(url_nhw, headers=headers, timeout=15)
