@@ -19,7 +19,8 @@ TELEGRAM_BOT_TOKEN = '8834803275:AAGcWnR8ujcknQJ2hM_n0vwn2veM22OTnBs'
 TELEGRAM_CHAT_ID = '8277719275' 
 
 # 2. Kryteria wyszukiwania
-MAX_CENA_ZIMNA = 1000 # Maksymalna cena Kaltmiete w Euro
+MAX_CENA_GWH_WARM = 1200 # Maksymalna cena Gesamtmiete w Euro (dla GWH)
+MAX_CENA_NHW_KALT = 1000 # Maksymalna cena Nettokaltmiete w Euro (dla NHW)
 MIN_POKOJE = 2        # Minimalna liczba pokoi
 MIN_METRAZ = 50       # Minimalny metraż w m2
 DZIELNICE = ["Sachsenhausen-Nord", "Sachsenhausen-Süd", "Sachsenhausen", "Niederrad"] 
@@ -111,7 +112,7 @@ def sprawdz_gwh():
                     pokoje = float(pokoje_match.group(1).replace(',', '.'))
                     metraz = float(metraz_match.group(1).replace(',', '.'))
                     id_oferty = link.split('/')[-1].split('?')[0][-10:]
-                    if cena <= MAX_CENA_ZIMNA and pokoje >= MIN_POKOJE and metraz >= MIN_METRAZ:
+                    if cena <= MAX_CENA_GWH_WARM and pokoje >= MIN_POKOJE and metraz >= MIN_METRAZ:
                         if not czy_pasuje_dzielnica(tekst): continue
                         znalezione_linki.add(link)
                         nowe_oferty.append({
@@ -150,7 +151,7 @@ def sprawdz_nhw():
                     pokoje = float(pokoje_match.group(1).replace(',', '.'))
                     metraz = float(metraz_match.group(1).replace(',', '.'))
                     id_oferty = link.split('/')[-1].split('?')[0][-10:]
-                    if cena <= MAX_CENA_ZIMNA and pokoje >= MIN_POKOJE and metraz >= MIN_METRAZ:
+                    if cena <= MAX_CENA_NHW_KALT and pokoje >= MIN_POKOJE and metraz >= MIN_METRAZ:
                         if not czy_pasuje_dzielnica(tekst): continue
                         znalezione_linki.add(link)
                         tytul_match = re.search(r'([^\.]+Frankfurt[^\.]+)', tekst)
