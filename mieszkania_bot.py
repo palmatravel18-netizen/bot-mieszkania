@@ -86,42 +86,39 @@ async def wyslij_raport_stanu():
 
 def sprawdz_gwh():
     nowe_oferty = []
-    # TUTAJ JEST ZMIANA: Wklejony Twój dokładny link z filtrami GWH
-    url_gwh = "https://www.gwh.de/mietangebote?tx_solr[filter][9]=pid:117&tx_solr[filter][10]=estate_type:APARTMENT&tx_solr[filter][11]=city:Frankfurt+am+Main&tx_solr[filter][12]=rooms:2-4&tx_solr[filter][13]=rent:800-1500" 
+    # Używamy bardziej ogólnego adresu, który GWH serwuje dla wszystkich
+    url_gwh = "https://www.gwh.de/mietangebote" 
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
     try:
+        # Pobieramy stronę i szukamy elementów kart ogłoszeń
         response = requests.get(url_gwh, headers=headers, timeout=15)
         soup = BeautifulSoup(response.text, 'html.parser')
-        oferty_html = soup.find_all(['div', 'article', 'a'])
+        # GWH często używa klas .estate-item lub podobnych w listach
+        oferty = soup.select('.estate-item, .item, .teaser')
+        
         znalezione_linki = set()
-        surowe_oferty = 0
-        for oferta in oferty_html:
+        for oferta in oferty:
             tekst = oferta.get_text(separator=' ', strip=True)
-            if "Frankfurt" not in tekst: continue
-            link_tag = oferta if oferta.name == 'a' else oferta.find('a')
-            if not link_tag or not link_tag.has_attr('href'): continue
-            link = link_tag['href']
-            if not link.startswith('http'): link = "https://www.gwh.de" + link
+            link_tag = oferta.find('a', href=True)
+            if not link_tag: continue
+            
+            link = "https://www.gwh.de" + link_tag['href']
             if link in znalezione_linki: continue
+            
             cena_match = re.search(r'([\d\.,]+)\s*€', tekst)
-            pokoje_match = re.search(r'([\d\.,]+)\s*Zimmer', tekst, re.IGNORECASE)
+            pokoje_match = re.search(r'([\d\.,]+)\s*(?:Zi|Zimmer)', tekst, re.IGNORECASE)
             metraz_match = re.search(r'([\d\.,]+)\s*m²', tekst)
+            
             if cena_match and pokoje_match and metraz_match:
-                surowe_oferty += 1
                 try:
                     cena = float(cena_match.group(1).replace('.', '').replace(',', '.'))
                     pokoje = float(pokoje_match.group(1).replace(',', '.'))
                     metraz = float(metraz_match.group(1).replace(',', '.'))
-                    id_oferty = link.split('/')[-1].split('?')[0][-10:]
                     if cena <= MAX_CENA_GWH_WARM and pokoje >= MIN_POKOJE and metraz >= MIN_METRAZ:
                         if not czy_pasuje_dzielnica(tekst): continue
                         znalezione_linki.add(link)
-                        nowe_oferty.append({
-                            'id': f"gwh_{id_oferty}", 'tytul': f"Mieszkanie GWH - {pokoje} pok.",
-                            'link': link, 'cena': cena, 'pokoje': pokoje, 'metraz': metraz, 'zrodlo': 'GWH'
-                        })
-                except Exception: continue
-        print(f"GWH: Znalazłem {surowe_oferty} ofert przed filtr. Po filtrach: {len(nowe_oferty)}")
+                        nowe_oferty.append({'id': f"gwh_{link[-10:]}", 'tytul': "Mieszkanie GWH", 'link': link, 'cena': cena, 'pokoje': pokoje, 'metraz': metraz, 'zrodlo': 'GWH'})
+                except: continue
         return nowe_oferty
     except Exception as e:
         print(f"Błąd GWH: {e}")
@@ -129,7 +126,6 @@ def sprawdz_gwh():
 
 def sprawdz_nhw():
     nowe_oferty = []
-    # TUTAJ JEST ZMIANA: Zaktualizowany link do ofert NHW
     url_nhw = "https://www.nhw.de/wohnungsangebote"
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
     try:
@@ -137,76 +133,48 @@ def sprawdz_nhw():
         soup = BeautifulSoup(response.text, 'html.parser')
         linki_ofert = soup.find_all('a', href=re.compile(r'/zuhause-finden/immobilie/'))
         znalezione_linki = set()
-        surowe_oferty = 0
         for link_tag in linki_ofert:
             link = "https://www.nhw.de" + link_tag['href']
             if link in znalezione_linki: continue
             kontener = link_tag.find_parent('div') or link_tag
             tekst = kontener.get_text(separator=' ', strip=True)
-            cena_match = re.search(r'([\d\.,]+)\s*€\s*Nettokaltmiete', tekst, re.IGNORECASE) or re.search(r'([\d\.,]+)\s*€', tekst)
+            cena_match = re.search(r'([\d\.,]+)\s*€', tekst)
             pokoje_match = re.search(r'([\d\.,]+)\s*Zimmer', tekst, re.IGNORECASE)
             metraz_match = re.search(r'([\d\.,]+)\s*m²', tekst)
             if cena_match and pokoje_match and metraz_match:
-                surowe_oferty += 1
                 try:
                     cena = float(cena_match.group(1).replace('.', '').replace(',', '.'))
                     pokoje = float(pokoje_match.group(1).replace(',', '.'))
                     metraz = float(metraz_match.group(1).replace(',', '.'))
-                    id_oferty = link.split('/')[-1].split('?')[0][-10:]
                     if cena <= MAX_CENA_NHW_KALT and pokoje >= MIN_POKOJE and metraz >= MIN_METRAZ:
                         if not czy_pasuje_dzielnica(tekst): continue
                         znalezione_linki.add(link)
-                        tytul_match = re.search(r'([^\.]+Frankfurt[^\.]+)', tekst)
-                        tytul = tytul_match.group(1).strip() if tytul_match else f"Mieszkanie NHW"
-                        nowe_oferty.append({
-                            'id': f"nhw_{id_oferty}", 'tytul': tytul, 'link': link,
-                            'cena': cena, 'pokoje': pokoje, 'metraz': metraz, 'zrodlo': 'NHW'
-                        })
-                except Exception: continue
-        print(f"NHW: Znalazłem {surowe_oferty} ofert przed filtr. Po filtrach: {len(nowe_oferty)}")
+                        nowe_oferty.append({'id': f"nhw_{link[-10:]}", 'tytul': "Mieszkanie NHW", 'link': link, 'cena': cena, 'pokoje': pokoje, 'metraz': metraz, 'zrodlo': 'NHW'})
+                except: continue
         return nowe_oferty
     except Exception as e:
         print(f"Błąd NHW: {e}")
         return []
 
 async def main():
-    # Odpalamy niewidzialną stronę dla Render.com
     threading.Thread(target=run_server, daemon=True).start()
-    
-    print("\n" + "="*50)
-    print("🤖 BOT MIESZKANIOWY URUCHOMIONY W CHMURZE RENDER!")
-    print("="*50 + "\n")
-    
-    try:
-        await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text="🚀 <b>Uruchomiono bota na serwerze!</b> Szukam mieszkań...", parse_mode='HTML')
-    except Exception:
-        pass
-
+    await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text="🚀 <b>Bot zaktualizowany i działa!</b>", parse_mode='HTML')
     czas_ostatniego_raportu = datetime.now()
-    
     while True:
         try:
             historia = wczytaj_historie()
-            oferty_gwh = sprawdz_gwh()
-            oferty_nhw = sprawdz_nhw()
-            
-            wszystkie_znalezione = oferty_gwh + oferty_nhw
-            nowe_do_wyslania = [o for o in wszystkie_znalezione if o['id'] not in historia]
-            
-            if nowe_do_wyslania:
-                for oferta in nowe_do_wyslania:
+            wszystkie_znalezione = sprawdz_gwh() + sprawdz_nhw()
+            nowe = [o for o in wszystkie_znalezione if o['id'] not in historia]
+            if nowe:
+                for oferta in nowe:
                     await wyslij_powiadomienie(oferta['tytul'], oferta['link'], oferta['cena'], oferta['pokoje'], oferta['metraz'], oferta['zrodlo'])
                     historia.append(oferta['id'])
-                    await asyncio.sleep(2)
                 zapisz_historie(historia)
-            
             if datetime.now() - czas_ostatniego_raportu > timedelta(hours=RAPORT_CO_ILE_GODZIN):
                 await wyslij_raport_stanu()
                 czas_ostatniego_raportu = datetime.now()
-                
         except Exception as e:
             print(f"Błąd główny: {e}")
-            
         await asyncio.sleep(INTERWAL_SPRAWDZANIA_SEKUNDY)
 
 if __name__ == '__main__':
