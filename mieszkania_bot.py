@@ -38,8 +38,8 @@ def sprawdz_gwh():
         wyniki = []
         for o in oferty:
             tekst = o.get_text()
-            # TEST: wypisze w logach, co bot "przeczytał"
-            print(f"DEBUG: Przeczytano ofertę: {tekst[:50]}...") 
+            # To wypisze w logach każdą ofertę, na którą bot natrafił
+            print(f"DEBUG GWH: Sprawdzam: {tekst[:50].strip()}...") 
             if czy_pasuje(tekst):
                 link = "https://www.gwh.de" + o.find('a')['href']
                 wyniki.append({'id': link, 'zrodlo': 'GWH', 'link': link})
@@ -54,7 +54,10 @@ def sprawdz_nhw():
         linki = soup.find_all('a', href=re.compile(r'/zuhause-finden/immobilie/'))
         wyniki = []
         for l in linki:
-            if czy_pasuje(l.find_parent('div').get_text()):
+            kontener_tekst = l.find_parent('div').get_text()
+            # To wypisze w logach każdą ofertę, na którą bot natrafił
+            print(f"DEBUG NHW: Sprawdzam: {kontener_tekst[:50].strip()}...") 
+            if czy_pasuje(kontener_tekst):
                 link = "https://www.nhw.de" + l['href']
                 wyniki.append({'id': link, 'zrodlo': 'NHW', 'link': link})
         return wyniki
