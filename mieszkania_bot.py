@@ -74,8 +74,17 @@ def run_http_server():
     HTTPServer(("0.0.0.0", port), HealthCheckHandler).serve_forever()
 
 async def monitoruj():
-    print("--- Bot aktywny i monitoruje ---")
+    # To wyśle wiadomość tylko raz, przy starcie bota
+    try:
+        await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text="🤖 Bot mieszkaniowy uruchomiony i gotowy do pracy!")
+    except:
+        pass
+        
+    print("--- Bot aktywny i monitoruje co minutę ---")
     historia = wczytaj_historie()
+    
+    while True:
+        # ... reszta kodu pętli pozostaje bez zmian ...
     
     while True:
         try:
