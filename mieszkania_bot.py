@@ -37,7 +37,10 @@ def sprawdz_gwh():
         oferty = soup.select('.estate-item, .item, .teaser')
         wyniki = []
         for o in oferty:
-            if czy_pasuje(o.get_text()):
+            tekst = o.get_text()
+            # TEST: wypisze w logach, co bot "przeczytał"
+            print(f"DEBUG: Przeczytano ofertę: {tekst[:50]}...") 
+            if czy_pasuje(tekst):
                 link = "https://www.gwh.de" + o.find('a')['href']
                 wyniki.append({'id': link, 'zrodlo': 'GWH', 'link': link})
         return wyniki
