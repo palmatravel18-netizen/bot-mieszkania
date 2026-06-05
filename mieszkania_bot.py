@@ -12,7 +12,7 @@ import threading
 TELEGRAM_BOT_TOKEN = '8834803275:AAGcWnR8ujcknQJ2hM_n0vwn2veM22OTnBs'
 TELEGRAM_CHAT_ID = '8277719275' 
 DZIELNICE = ["Sachsenhausen", "Niederrad"] 
-INTERWAL = 300 # Sprawdzanie co 5 minut
+INTERWAL = 60 # Sprawdzanie co 1 minute
 PLIK_HISTORII = 'znalezione.json'
 
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
