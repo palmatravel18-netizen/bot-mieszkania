@@ -8,6 +8,7 @@ from telegram import Bot
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import threading
 
+# Konfiguracja
 TELEGRAM_BOT_TOKEN = '8834803275:AAGcWnR8ujcknQJ2hM_n0vwn2veM22OTnBs'
 TELEGRAM_CHAT_ID = '8277719275' 
 DZIELNICE = ["Sachsenhausen", "Niederrad"] 
@@ -67,7 +68,11 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
         self.end_headers()
         
     def log_message(self, format, *args):
-        return  # Wyłącza logowanie zapytań HTTP, żeby było czysto
+        return  # Wyciszenie logów zapytań HTTP
+
+def run_http_server():
+    port = int(os.environ.get("PORT", 10000))
+    HTTPServer(("0.0.0.0", port), HealthCheckHandler).serve_forever()
 
 async def monitoruj():
     try:
@@ -76,6 +81,7 @@ async def monitoruj():
     
     print("--- Bot aktywny i monitoruje co minutę ---")
     historia = wczytaj_historie()
+    
     while True:
         try:
             print("--- Sprawdzam oferty (logi w tle)... ---")
@@ -87,10 +93,12 @@ async def monitoruj():
                     await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=msg, parse_mode='HTML')
                     historia.append(oferta['id'])
                     znaleziono_nowe = True
+            
             if znaleziono_nowe:
                 zapisz_historie(historia)
             else:
                 print("Brak nowych ofert.")
+            
             await asyncio.sleep(INTERWAL)
         except Exception as e:
             print(f"Błąd: {e}")
