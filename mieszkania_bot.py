@@ -64,7 +64,7 @@ async def wyslij_powiadomienie(tytul, link, cena, pokoje, metraz, zrodlo):
 def sprawdz_gwh():
     nowe_oferty = []
     url = "https://www.gwh.de/mietangebote"
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'}
     try:
         response = requests.get(url, headers=headers, timeout=15)
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -73,7 +73,6 @@ def sprawdz_gwh():
             link_tag = oferta.find('a', href=True)
             if not link_tag: continue
             link = "https://www.gwh.de" + link_tag['href']
-            
             cena_match = re.search(r'([\d\.,]+)\s*€', tekst)
             if cena_match:
                 cena = float(cena_match.group(1).replace('.', '').replace(',', '.'))
@@ -85,7 +84,7 @@ def sprawdz_gwh():
 def sprawdz_nhw():
     nowe_oferty = []
     url = "https://www.nhw.de/wohnungsangebote"
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'}
     try:
         response = requests.get(url, headers=headers, timeout=15)
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -106,10 +105,12 @@ async def main():
     czas_raportu = datetime.now()
     
     while True:
+        print("--- Sprawdzam nowe oferty... ---") # TO ZOBACZYSZ W LOGACH
         historia = wczytaj_historie()
         wszystkie = sprawdz_gwh() + sprawdz_nhw()
-        nowe = [o for o in wszystkie if o['id'] not in historia]
+        print(f"Znaleziono {len(wszystkie)} ofert na stronach.") # TO ZOBACZYSZ W LOGACH
         
+        nowe = [o for o in wszystkie if o['id'] not in historia]
         for oferta in nowe:
             await wyslij_powiadomienie("Mieszkanie", oferta['link'], oferta['cena'], 0, 0, oferta['zrodlo'])
             historia.append(oferta['id'])
